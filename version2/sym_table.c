@@ -1,12 +1,12 @@
 struct defined_function {
-	unsigned long addr;
+	unsigned long addr;			//starting address of function
 	char name[32];
 	char type;
-	struct defined_function *next;
+	struct defined_function *next;		//ptr to next defined function
 	struct defined_function *prev;
-	unsigned trap_reset_data;
-	struct Stack *stack_frame;
-	struct instruction *current_instr;
+	unsigned trap_reset_data;		//data for restoring breakpoint
+	struct Stack *stack_frame;		//ptr to the function's stack frame struct
+	struct instruction *current_instr;	//ptr to struct of current instruction
 	int num_instrs;
 	int instr_arr[128];
 
@@ -22,26 +22,33 @@ struct instruction {
 
 int get_sym_tbl(char * prog_name)
 {
+	/*This function calls the nm linux command on the program to trace,
+	which outputs all defined functions in the executable from smallest
+	to largest address. A defined_function struct is then initialized for
+	each outputed function.*/
+
 	FILE *pipe;
 	int i = 0;
-	char command[64];
+	char command[64];	//buffer to store nm command output
 
 	snprintf(command, 63, "nm -n --defined-only %s", prog_name);
 
 	pipe = popen(command, "r");
 
+	/*Iterate through each defined function*/
 	while(1)
 	{
 		if(feof(pipe))
 			break;
 
-		def_funcs[i] = (struct defined_function *) malloc(sizeof(struct defined_function));
+		def_funcs[i] = (struct defined_function *) malloc(sizeof(struct defined_function));	//allocate and init the struct
 		def_funcs[i]->current_instr = 0;
 		def_funcs[i]->num_instrs = 0;
 
+		//set starting address, type, and name of function 
 		if(fscanf(pipe, "%x %c %s", &def_funcs[i]->addr, &def_funcs[i]->type, &def_funcs[i]->name)==EOF)
 			break;
-
+		//set linked-list pointers for current function struct
 		if(i > 0)
 		{
 			def_funcs[i]->prev = def_funcs[i-1];
@@ -84,6 +91,8 @@ int get_instruction_addrs(struct defined_function * func)
 	start_addr, stop_addr, progName);
 
 	pipe = popen(command, "r");	//read objdump output into command buffer
+
+	/*parse buffer and save instruction addresses to double-linked list of structs*/
 
 	while(1)
 	{
