@@ -61,14 +61,19 @@ int get_sym_tbl(char * prog_name)
 
 int get_instruction_addrs(struct defined_function * func)
 {
-	char command[256];
+	/*This function in-line's execution of the objdump command,
+	to print out all of the instructions addresses of a defined function.
+	Since we dont have a built-in disassembler we have no way to preemptively 
+	calculate the size of each instruction, which is why the function exists.*/
+
+	char command[256];	//stores output of the objdump command. Probably needs to be larger or dynamically alloc'd
 	FILE *pipe;
 	int i = 0;
-	unsigned stop_addr;
-	unsigned start_addr = func->addr;
+	unsigned stop_addr;	
+	unsigned start_addr = func->addr; //set starting address to start address of function
 
 	if(func->next != NULL){
-		stop_addr = func->next->addr;
+		stop_addr = func->next->addr; //set stopping address to starting address of next function
 	}else{
 		printf("Error: Can't retrieve instruction addresses since next function is NULL\n");
 		return(-1);
@@ -78,7 +83,7 @@ int get_instruction_addrs(struct defined_function * func)
 	"objdump -M intel -D --prefix-addresses --start-address=0x%08x --stop-address=0x%08x %s | grep 08048", 
 	start_addr, stop_addr, progName);
 
-	pipe = popen(command, "r");
+	pipe = popen(command, "r");	//read objdump output into command buffer
 
 	while(1)
 	{
