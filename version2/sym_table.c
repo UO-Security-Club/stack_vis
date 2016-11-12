@@ -1,3 +1,5 @@
+#include "global_defs.h"
+
 struct defined_function {
 	unsigned long addr;			//starting address of function
 	char name[32];
@@ -19,6 +21,36 @@ struct instruction {
 	char disasm[32];
 
 } instr_list;
+
+int search_funcs(char * name)
+{
+	int i=0;
+	struct defined_function * current = def_funcs[0];
+
+	while(1)
+	{
+		if(strcmp(current->name, name) == 0)
+		{
+			printf("search_funcs: found %s: 0x%08x\n", name, current->addr);
+			return(i);
+		}else{
+			current = current->next;
+			i++;
+			if(current->next == NULL)
+			{
+				if(strcmp(current->name, name) == 0)
+                		{
+                        		printf("search_funcs: found %s: 0x%08x\n", name, current->addr);
+                        		return(i);
+                		}else{
+					return(-1);
+				}
+			}
+		}
+	}
+
+	return(-1);
+}
 
 int get_sym_tbl(char * prog_name)
 {
@@ -88,7 +120,7 @@ int get_instruction_addrs(struct defined_function * func)
 
 	snprintf(command, 255,
 	"objdump -M intel -D --prefix-addresses --start-address=0x%08x --stop-address=0x%08x %s | grep 08048", 
-	start_addr, stop_addr, progName);
+	start_addr, stop_addr, prog_name);
 
 	pipe = popen(command, "r");	//read objdump output into command buffer
 
